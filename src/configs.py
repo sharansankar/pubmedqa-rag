@@ -54,3 +54,13 @@ DEMO_SESSION_CONFIG = SessionConfig(
   ],
   debugging=False
 )
+
+PROD_SESSION_CONFIG = SessionConfig(
+  data_store_config=PROD_PUBMED_DATASET_CONFIG,
+  llm_client_config=DEMO_LLM_CONFIG,
+  extraction_stages=[
+    QueryContextType.PUBMED_TOPIC_SELF_QUERY,
+    QueryContextType.PUBMED_CONTEXT
+  ],
+  debugging=False
+)
