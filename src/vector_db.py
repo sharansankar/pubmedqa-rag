@@ -33,7 +33,7 @@ class ChromaVectorStore:
       documents=text_list
     )
 
-  def _flatten_documents(self, documents):
+  def _flatten_documents(self, documents: List) -> List[str]:
     return [text for document in documents for text in document]
 
   def _parse_response(self, query_response) -> QueryResult:
