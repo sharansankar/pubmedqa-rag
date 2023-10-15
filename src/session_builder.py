@@ -6,11 +6,7 @@ from llm_agent import OpenAILLMChatClient
 from prompt_generator import PromptGenerator
 from prompt_response_attrs_utils import get_query_context_extracted_values
 from vector_db import HuggingFaceDatasetStore
-
-TEST_DATASET = 'FedML/PubMedQA_instruction'
-TEST_SPLIT_NAME = 'train'
-TEST_SAMPLES = 100
-TEST_COL_IDENTIFIER = 'context'
+from configs import SessionConfig
 
 
 class SessionBuilder:
@@ -23,23 +19,20 @@ class SessionBuilder:
     )
     self.current_session = session
 
-  def __init__(self, ):
+  def __init__(self, session_config: SessionConfig):
     self._build_session()
-    self.data_store = HuggingFaceDatasetStore(
-      dataset_name=TEST_DATASET,
-      split_name=TEST_SPLIT_NAME,
-      col_store_identifier=TEST_COL_IDENTIFIER,
-      num_samples_to_load=TEST_SAMPLES
-    )
-    self.llm_agent = OpenAILLMChatClient()
-    self.context_prompt_generator = PromptGenerator(QueryContextType.PUBMED_CONTEXT)
-    self.self_querying_prompt_generator = PromptGenerator(QueryContextType.PUBMED_TOPIC_SELF_QUERY)
+    self.data_store = HuggingFaceDatasetStore(session_config.data_store_config)
+    self.llm_agent = OpenAILLMChatClient(session_config.llm_client_config)
+
+    if QueryContextType.PUBMED_CONTEXT in session_config.extraction_stages:
+      self.context_prompt_generator = PromptGenerator(QueryContextType.PUBMED_CONTEXT)
+
+    if QueryContextType.PUBMED_TOPIC_SELF_QUERY in session_config.extraction_stages:
+      self.self_querying_prompt_generator = PromptGenerator(QueryContextType.PUBMED_TOPIC_SELF_QUERY)
+
     self.last_pr_attrs = None
-    self.enabled_extraction_stages = [
-      QueryContextType.PUBMED_TOPIC_SELF_QUERY,
-      QueryContextType.PUBMED_CONTEXT
-    ]
-    self.debugging_enabled = False
+    self.enabled_extraction_stages = session_config.extraction_stages
+    self.debugging_enabled = session_config.debugging
 
   def create_prompt_response_attrs_with_prompt(self, prompt: str):
     return PromptResponseAttributes(
@@ -92,3 +85,17 @@ class SessionBuilder:
 
   def response_is_upvoted(self):
     self.latest_pr_attrs.human_feedback = HumanFeedback(is_upvoted=True)
+
+  def enable_debugging(self):
+    self.debugging_enabled = True
+
+  def disable_debugging(self):
+    self.debugging_enabled = False
+
+
+if __name__ == "__main__":
+  from configs import DEMO_SESSION_CONFIG
+
+  session = SessionBuilder(DEMO_SESSION_CONFIG)
+  session.enable_debugging()
+  session.process_user_prompt("is diabetes a medical condition?")

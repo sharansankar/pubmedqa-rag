@@ -1,14 +1,9 @@
 from dotenv import load_dotenv
-from enum import Enum
 import openai
 import os
 from typing import List, Dict, Optional
 
 from data_model import LLMPromptResponse
-
-
-class LLMInstanceTypes(Enum):
-  GPT_3_5_TURBO = "gpt-3.5-turbo"
 
 
 def init_open_ai():
@@ -19,8 +14,10 @@ def init_open_ai():
 
 
 class OpenAILLMChatClient:
-  def __init__(self, model_name: LLMInstanceTypes = LLMInstanceTypes.GPT_3_5_TURBO):
-    self.model_name = model_name.value
+  def __init__(self, config: "LLMConfig"):
+    self.model_name = config.model_name.value
+    self.max_tokens = config.max_tokens
+    self.temperature = config.temperature
 
     if openai.organization is None or openai.api_key is None:
       init_open_ai()
@@ -59,6 +56,15 @@ class OpenAILLMChatClient:
       ]
     response = openai.ChatCompletion.create(
       model=self.model_name,
-      messages=prev_messages
+      messages=prev_messages,
+      max_tokens=self.max_tokens,
+      temperature=self.temperature
     )
     return self._parse_llm_response(response)
+
+
+if __name__ == "__main__":
+  from configs import DEMO_LLM_CONFIG
+  llm_client = OpenAILLMChatClient(DEMO_LLM_CONFIG)
+  response = llm_client.get_response_from_prompt("hello what is your name?")
+  print(response)

@@ -1,15 +1,12 @@
+import attr
 import chromadb
 from datasets import load_dataset
 from enum import Enum
 from typing import List, Optional
 
-from data_model import QueryResult
+from data_model import QueryResult, DataStoreType
 
 CHROMA_CLIENT = None
-
-class DataStoreType(Enum):
-  CHORMA_VECTOR_STORE = "chroma_vector_store"
-
 
 def get_chroma_client():
   global CHROMA_CLIENT
@@ -62,16 +59,13 @@ DataStoreType.CHORMA_VECTOR_STORE: ChromaVectorStore
 class HuggingFaceDatasetStore:
   def __init__(
     self,
-    dataset_name: str,
-    split_name: str,
-    col_store_identifier: str,
-    data_store_type: DataStoreType = DataStoreType.CHORMA_VECTOR_STORE,
-    num_samples_to_load: Optional[int] = 10
+    config: "DatasetStoreConfig"
   ):
-    data_store = DATA_STORE_TO_CLASS.get(data_store_type)
-    self.data_store = data_store(db_name=data_store_type.value)
-    self.dataset = self._get_hugging_face_ds(dataset_name, split_name)
-    self._load_into_data_store(col_store_identifier, num_samples_to_load)
+    self.config= config
+    data_store = DATA_STORE_TO_CLASS.get(config.data_store_type)
+    self.data_store = data_store(db_name=config.data_store_type.value)
+    self.dataset = self._get_hugging_face_ds(config.dataset_name, config.split_name)
+    self._load_into_data_store(config.column_identifier, config.num_samples_to_load)
 
   def _get_hugging_face_ds(self, name, split_name):
     dataset = load_dataset(name, split=split_name)
@@ -94,5 +88,10 @@ class HuggingFaceDatasetStore:
     )
 
 
+if __name__ == "__main__":
+  from configs import DEMO_PUBMED_DATASET_CONFIG
+
+  hfds = HuggingFaceDatasetStore(DEMO_PUBMED_DATASET_CONFIG)
+  print(hfds.query_dataset(['is this working?']))
 
 
