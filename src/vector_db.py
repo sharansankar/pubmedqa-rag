@@ -36,10 +36,13 @@ class ChromaVectorStore:
       documents=text_list
     )
 
+  def _flatten_documents(self, documents):
+    return [text for document in documents for text in document]
+
   def _parse_response(self, query_response) -> QueryResult:
     return QueryResult(
       raw_text_response="",
-      extracted_values=query_response["documents"][0],
+      extracted_values=self._flatten_documents(query_response["documents"]),
       metadata=query_response
     )
 
